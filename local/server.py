@@ -127,7 +127,8 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # 默认返回静态文件
             super().do_GET()
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+# 设置工作目录为项目根目录
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
     print(f"服务器已启动: http://localhost:{PORT}")
