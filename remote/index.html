@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniMax 算力监控</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-card.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .stat-value.small {
+            font-size: 24px;
+        }
+
+        .stat-unit {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .progress-section {
+            margin-bottom: 24px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .progress-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        .progress-percent {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .timeline {
+            margin-bottom: 30px;
+        }
+
+        .timeline-title {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .timeline-bar {
+            display: flex;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .timeline-segment {
+            flex: 1;
+            position: relative;
+        }
+
+        .timeline-segment:not(:last-child) {
+            border-right: 2px solid rgba(0, 0, 0, 0.3);
+        }
+
+        .timeline-segment.active {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .timeline-segment.past {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .timeline-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+
+        .timeline-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+        }
+
+        .chart-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .chart-title {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .date-range {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .date-range label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+        }
+
+        .date-range select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+
+        .refresh-time {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+        }
+
+        .refresh-time span {
+            cursor: pointer;
+            color: #667eea;
+            margin-left: 10px;
+        }
+
+        /* 加载中样式 */
+        .loading {
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card.highlight {
+                grid-column: span 1;
+            }
+
+            .stat-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MiniMax 算力监控</h1>
+            <div class="subtitle">M2.5 模型</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card highlight">
+                <div class="stat-label">剩余时间</div>
+                <div class="stat-value">
+                    <span id="remainingTime">--</span>
+                    <span class="stat-unit">h</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">已用配额</div>
+                <div class="stat-value small" id="remainingCount">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">总配额</div>
+                <div class="stat-value small" id="totalCount">--</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-header">
+                <span class="progress-label">剩余用量</span>
+                <span class="progress-percent" id="usagePercent">--%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-title">周期时间轴</div>
+            <div class="timeline-bar" id="timelineBar">
+            </div>
+            <div class="timeline-labels" id="timelineLabels">
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="chart-header">
+                <span class="chart-title">用量趋势</span>
+                <div class="date-range">
+                    <label>显示范围:</label>
+                    <select id="dateRange" onchange="loadHistoryData()">
+                        <option value="1">过去1天</option>
+                        <option value="3" selected>过去3天</option>
+                        <option value="7">过去7天</option>
+                        <option value="30">过去30天</option>
+                    </select>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="usageChart"></canvas>
+                <div class="loading" id="chartLoading">加载趋势数据中...</div>
+            </div>
+        </div>
+
+        <div class="refresh-time">
+            最后更新: <span id="lastUpdate">--</span>
+            <span onclick="refreshData()">刷新</span>
+        </div>
+    </div>
+
+    <script>
+        // 远程版本 - 请将 config.yaml 中的 remote 配置同步到这里
+        // cloud_function_url: 云函数HTTP触发地址（获取实时数据）
+        // cos_url: COS历史数据URL
+        const CLOUD_FUNCTION_URL = 'YOUR_CLOUD_FUNCTION_URL';
+        const COS_URL = 'YOUR_COS_URL';
+
+        let usageChart = null;
+
+        // 初始化时间轴
+        function initTimeline() {
+            const bar = document.getElementById('timelineBar');
+            const labels = document.getElementById('timelineLabels');
+
+            // 5个时间段，每5小时
+            const periods = [
+                { start: 0, end: 5, label: '00:00-05:00' },
+                { start: 5, end: 10, label: '05:00-10:00' },
+                { start: 10, end: 15, label: '10:00-15:00' },
+                { start: 15, end: 20, label: '15:00-20:00' },
+                { start: 20, end: 24, label: '20:00-24:00' }
+            ];
+
+            const now = new Date();
+            const currentHour = now.getHours();
+
+            let barHTML = '';
+            let labelHTML = '';
+
+            periods.forEach((p, i) => {
+                let cls = '';
+                if (currentHour >= p.start && currentHour < p.end) {
+                    cls = 'active';
+                } else if (currentHour >= p.end) {
+                    cls = 'past';
+                }
+                barHTML += `<div class="timeline-segment ${cls}"></div>`;
+                labelHTML += `<span class="timeline-label">${p.label}</span>`;
+            });
+
+            bar.innerHTML = barHTML;
+            labels.innerHTML = labelHTML;
+        }
+
+        // 获取实时数据
+        async function fetchData() {
+            try {
+                const response = await fetch(CLOUD_FUNCTION_URL, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    timeout: 10000
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.model_remains ? data.model_remains[0] : null;
+            } catch (error) {
+                console.error('获取实时数据失败:', error);
+                alert('获取数据失败，请检查网络或云函数配置');
+                return null;
+            }
+        }
+
+        // 获取历史数据
+        async function loadHistoryData() {
+            const loadingEl = document.getElementById('chartLoading');
+            loadingEl.style.display = 'block';
+            
+            try {
+                const response = await fetch(COS_URL, {
+                    mode: 'cors',
+                    timeout: 10000
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateChart(data || []);
+                } else {
+                    throw new Error(`COS请求失败: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('获取历史数据失败:', error);
+                alert('获取历史数据失败，图表无法展示');
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        // 按时间段分组，取每段最后一条记录
+        function groupByPeriod(data) {
+            const periods = {};
+
+            data.forEach(record => {
+                const d = new Date(record.timestamp);
+                const hour = d.getHours();
+
+                // 计算属于哪个5小时时间段
+                let periodKey;
+                if (hour >= 0 && hour < 5) periodKey = '00:00-05:00';
+                else if (hour >= 5 && hour < 10) periodKey = '05:00-10:00';
+                else if (hour >= 10 && hour < 15) periodKey = '10:00-15:00';
+                else if (hour >= 15 && hour < 20) periodKey = '15:00-20:00';
+                else periodKey = '20:00-24:00';
+
+                // 添加日期
+                const dateKey = `${d.getMonth()+1}/${d.getDate()}`;
+                const fullKey = `${dateKey} ${periodKey}`;
+
+                // 如果这个时间段还没有记录，或者当前记录更晚，则更新
+                if (!periods[fullKey] || new Date(record.timestamp) > new Date(periods[fullKey].timestamp)) {
+                    periods[fullKey] = record;
+                }
+            });
+
+            return Object.values(periods);
+        }
+
+        // 更新图表
+        function updateChart(data) {
+            const days = parseInt(document.getElementById('dateRange').value);
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+
+            // 过滤数据
+            const filteredData = (data || []).filter(r => new Date(r.timestamp) >= cutoffDate);
+
+            // 无数据时提示
+            if (filteredData.length === 0) {
+                alert('暂无符合条件的历史数据');
+                return;
+            }
+
+            // 排序
+            filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            // 按时间段分组，取每段最后一条记录
+            const groupedData = groupByPeriod(filteredData);
+            groupedData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            // 提取标签和数据
+            const labels = groupedData.map(r => {
+                const d = new Date(r.timestamp);
+                const hour = d.getHours();
+                let period;
+                if (hour >= 0 && hour < 5) period = '00-05';
+                else if (hour >= 5 && hour < 10) period = '05-10';
+                else if (hour >= 10 && hour < 15) period = '10-15';
+                else if (hour >= 15 && hour < 20) period = '15-20';
+                else period = '20-24';
+                return `${d.getMonth()+1}/${d.getDate()} ${period}`;
+            });
+
+            // 已用百分比 = (已用/总数)*100
+            const usagePercent = groupedData.map(r => {
+                const total = r.total_count || 1; // 避免除以0
+                const used = r.used_count || 0;
+                return ((used / total) * 100).toFixed(1);
+            });
+
+            const ctx = document.getElementById('usageChart').getContext('2d');
+
+            if (usageChart) {
+                usageChart.destroy();
+            }
+
+            usageChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '剩余用量 (%)',
+                            data: usagePercent,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            fill: true,
+                            pointBackgroundColor: '#667eea',
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#fff'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: 'rgba(255,255,255,0.6)'
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '剩余用量 (%)',
+                                color: 'rgba(255,255,255,0.6)'
+                            },
+                            ticks: {
+                                color: 'rgba(255,255,255,0.6)'
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            },
+                            min: 0,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新UI
+        function updateUI(info) {
+            if (!info) return;
+
+            // 剩余时间（兜底：避免NaN）
+            const remainHours = info.remains_time_hours || (info.remains_time_ms / 3600000 || 0);
+            document.getElementById('remainingTime').textContent = remainHours.toFixed(1);
+
+            // 已用配额
+            document.getElementById('remainingCount').textContent = info.remain_count || (info.total_count - info.used_count || 0);
+
+            // 总配额
+            document.getElementById('totalCount').textContent = info.total_count || 0;
+
+            // 已用百分比
+            const total = info.total_count || 1;
+            const used = info.used_count || 0;
+            const usedPercent = ((used / total) * 100).toFixed(1);
+            document.getElementById('usagePercent').textContent = usedPercent + '%';
+            document.getElementById('progressFill').style.width = usedPercent + '%';
+
+            // 最后更新时间
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('zh-CN');
+
+            // 初始化时间轴
+            initTimeline();
+        }
+
+        // 刷新数据
+        async function refreshData() {
+            const info = await fetchData();
+            if (info) {
+                updateUI(info);
+            }
+            // 刷新图表
+            loadHistoryData();
+        }
+
+        // 初始化
+        window.onload = async function() {
+            initTimeline(); // 先初始化空时间轴
+            await refreshData(); // 加载数据
+            // 每30秒自动刷新
+            setInterval(refreshData, 30000);
+        };
+    </script>
+</body>
+</html>

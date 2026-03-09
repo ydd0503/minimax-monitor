@@ -1,0 +1,18 @@
+# MiniMax API 配置
+api_key: "your-api-key-here"
+
+# API 地址
+api_url: "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains"
+
+# 监控配置
+monitor:
+  interval_minutes: 30
+  record_before_seconds: 300
+  cycle_hours: 5
+
+# 远程部署配置（部署到腾讯云时填写）
+remote:
+  # 云函数HTTP触发地址（用于获取实时数据）
+  cloud_function_url: "YOUR_CLOUD_FUNCTION_URL"
+  # COS历史数据URL
+  cos_url: "YOUR_COS_URL"
