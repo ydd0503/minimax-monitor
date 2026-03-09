@@ -1,8 +1,12 @@
-# MiniMax 算力监控工具
+# MiniMax 算力监控工具 / MiniMax Usage Monitor
 
-实时监控 MiniMax API 用量，自动记录历史数据。
+[English](#english) | [中文](#中文)
 
-## 效果展示
+---
+
+## 中文
+
+### 效果展示
 
 **在线演示**：https://wandaydd.com/minimax
 
@@ -10,7 +14,7 @@
 
 ---
 
-## 架构
+### 架构
 
 本项目支持两种使用方式：
 
@@ -19,13 +23,13 @@
 | **本地版** | 本地文件 | 局域网访问 | 个人使用、无需部署 |
 | **远程版** | 腾讯云 COS | 任意设备访问 | 随时随地查看 |
 
-## 安装
+### 安装
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 配置
+### 配置
 
 编辑 `config.yaml` 文件：
 
@@ -50,9 +54,9 @@ remote:
 
 ---
 
-## 本地版使用
+### 本地版使用
 
-### 方式一：命令行查询
+#### 方式一：命令行查询
 
 ```bash
 # 查询当前用量
@@ -65,7 +69,7 @@ python local/monitor.py monitor
 python local/monitor.py history
 ```
 
-### 方式二：Web 界面
+#### 方式二：Web 界面
 
 1. 启动定时记录（必需）：
    ```bash
@@ -81,11 +85,11 @@ python local/monitor.py history
 
 ---
 
-## 远程版使用
+### 远程版使用
 
 远程版需要部署到腾讯云。
 
-### 部署步骤
+#### 部署步骤
 
 1. **云函数代码**：使用云函数版本的代码（获取 API Key 从环境变量）
 
@@ -97,7 +101,7 @@ python local/monitor.py history
 
 ---
 
-## 项目结构
+### 项目结构
 
 ```
 .
@@ -110,13 +114,13 @@ python local/monitor.py history
 │   ├── server.py      # HTTP服务器
 │   └── index_local.html
 │
-└── remote/             # 远程版本（部署到COS）
+└── remote/            # 远程版本（部署到COS）
     └── index.html
 ```
 
 ---
 
-## API 接口
+### API 接口
 
 本地服务器提供以下接口：
 
@@ -128,6 +132,142 @@ python local/monitor.py history
 
 ---
 
-## 温馨提示
+### 温馨提示
 
 **关于 MiniMax API 字段命名**：经测试发现，MiniMax 返回的字段名称可能存在语义混淆（如 `used_count` 和 `remain_count` 的实际含义可能与字面意思相反）。如果你让 AI 自动修改相关代码，请注意这一点，建议通过实际测试验证字段含义后再使用。
+
+---
+
+<a name="english"></a>
+
+## English
+
+### Demo
+
+**Live Demo**: https://wandaydd.com/minimax
+
+![Screenshot](./view.png)
+
+---
+
+### Architecture
+
+This project supports two usage modes:
+
+| Mode | Data Storage | Access | Use Case |
+|------|--------------|--------|----------|
+| **Local** | Local file | LAN access | Personal use, no deployment |
+| **Remote** | Tencent Cloud COS | Anywhere | Access from any device |
+
+### Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+### Configuration
+
+Edit `config.yaml`:
+
+```yaml
+# MiniMax API Configuration (required)
+api_key: "your-api-key-here"
+
+# API URL (usually no need to change)
+api_url: "https://www.minimaxi.com/v1/api/openplatform/coding_plan/remains"
+
+# Monitor settings
+monitor:
+  interval_minutes: 30           # Check interval (minutes)
+  record_before_seconds: 300    # Extra record before cycle ends
+  cycle_hours: 5                 # Power cycle (hours)
+
+# Remote deployment config (not needed for local version)
+remote:
+  cloud_function_url: "https://xxx.tencentscf.com/release"
+  cos_url: "https://xxx.cos.ap-shanghai.myqcloud.com/usage_data.json"
+```
+
+---
+
+### Local Version Usage
+
+#### Option 1: Command Line
+
+```bash
+# Query current usage
+python local/monitor.py query
+
+# Start scheduled monitoring (run in background)
+python local/monitor.py monitor
+
+# View history
+python local/monitor.py history
+```
+
+#### Option 2: Web Interface
+
+1. Start scheduled recording (required):
+   ```bash
+   python local/monitor.py monitor
+   ```
+
+2. Start HTTP server (new terminal):
+   ```bash
+   python local/server.py
+   ```
+
+3. Open in browser: `http://localhost:8080/local/index_local.html`
+
+---
+
+### Remote Version Usage
+
+Remote version needs to be deployed to Tencent Cloud.
+
+#### Deployment Steps
+
+1. **Cloud Function**: Use the cloud function version (API Key from environment variable)
+
+2. **Sync Config**: Copy `remote` config from `config.yaml` to `remote/index.html`
+
+3. **Upload Frontend**: Upload `remote/index.html` to COS bucket
+
+4. **Access**: Visit via COS bucket URL
+
+---
+
+### Project Structure
+
+```
+.
+├── config.yaml          # Configuration file
+├── requirements.txt    # Python dependencies
+├── usage_data.json     # History data (auto-generated)
+│
+├── local/              # Local version
+│   ├── monitor.py     # Scheduled recording script
+│   ├── server.py      # HTTP server
+│   └── index_local.html
+│
+└── remote/             # Remote version (deploy to COS)
+    └── index.html
+```
+
+---
+
+### API Endpoints
+
+The local server provides:
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/current` | Get real-time usage data |
+| `/api/history` | Get historical records |
+| `/api/config` | Get remote config |
+
+---
+
+### Note
+
+**Regarding MiniMax API field names**: Testing reveals that MiniMax's returned field names may have semantic confusion (e.g., `used_count` and `remain_count` may have opposite meanings from their literal interpretation). If you use AI to auto-modify code, please verify the field meanings through actual testing.
